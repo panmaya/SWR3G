@@ -34,7 +34,7 @@
 #include "swd_io.h"
 #include "buffer_gpbm.h"
 
-extern void sleep_entry ( char mode, uint16_t waitsec );
+extern void sleep_entry ( char mode, uint16_t waitsec, bool init_chip );
 extern void aptAfec_SetupADC(void);
 
 #define HELLO_PRINT_APP(_myDate,_myTime)		do {\
@@ -313,8 +313,6 @@ void aptStart_task (void * pvParameters) {
 			
 			if(gps_Hibernate_delay > _1mSecTick_Second(60 * mul)) {
 				
-				uint16_t wakeup_delay = (15*12);//12 =  1 min
-				
 				gps_Hibernate_delay = 0;
 				
 				mul = 1;
@@ -332,18 +330,50 @@ void aptStart_task (void * pvParameters) {
 				
 				aptStart_isHibernated = true;
 				
+				uint16_t rtc_batt_charge_count = 0;
+				
+				sleep_entry('W', 1, true );//Sleep 1 Sec with initial IO low power
+				
 				do {
 					afec_disable_interrupt(AFEC0, AFEC_INTERRUPT_ALL);
 					afec_disable(AFEC0);//Sleep manager inside this function
 					
-					sleep_entry('W', 5 );
+					rtc_batt_charge_count++;
+					
+					if(rtc_batt_charge_count == 12*15) {
+						gps_init_board();//On GPS Power for charge RTC Backup BATT
+						vTaskDelay (1000);
+						while(!hw_ctrl_gps_Wakeup()) { // GPS Wakeup  Trigger
+							ioport_set_pin_level(PIN_ONOFF_GPS, PIN_ONOFF_GPS_ON);
+							vTaskDelay(200);
+							ioport_set_pin_level(PIN_ONOFF_GPS, PIN_ONOFF_GPS_OFF);
+							vTaskDelay(200);
+						}
+						printf("\r\n GPS Acquired Signal\r\n");
+						sleep_entry('W', 5, false );//Sleep 5 Sec without initial IO
+					}
+					if(rtc_batt_charge_count == 12*16) {
+						while(hw_ctrl_gps_Wakeup()) { // GPS Hibernated  Trigger
+							ioport_set_pin_level(PIN_ONOFF_GPS, PIN_ONOFF_GPS_ON);
+							vTaskDelay(200);
+							ioport_set_pin_level(PIN_ONOFF_GPS, PIN_ONOFF_GPS_OFF);
+							vTaskDelay(200);
+						}
+						printf("\r\n GPS Hibernated\r\n");
+						sleep_entry('W', 5, false );//Sleep 5 Sec without initial IO
+					}
+					else if(rtc_batt_charge_count == 12*17) {
+						printf("\r\n GPS RTC Stop charged\r\n");
+						sleep_entry('W', 5, true );//Sleep 5 Sec with initial IO low power
+						rtc_batt_charge_count = 0;
+					}
+					else sleep_entry('W', 5, false );//Sleep 5 Sec without initial IO
 					
 					aptAfec_SetupADC();
 					
 					afec_start_software_conversion(AFEC0);
 					
-					do {
-						vTaskDelay(10);
+					do { vTaskDelay(10);
 					}while(afec_get_interrupt_status(AFEC0) & (1 << AFEC_CHANNEL_3));
 					
 					vADC_ExtPower = aptAfec_get(APT_AFEC_EXT_POWER_CH);
@@ -351,11 +381,11 @@ void aptStart_task (void * pvParameters) {
 					
 					printf("\r\nHibernated: %.3f, %.3f\r\n",vADC_ExtPower,vADC_Battery);
 					
-				}while((vADC_ExtPower < VEXT_MIN_THRESHOLD)&& wakeup_delay--);
+				}while(vADC_ExtPower < VEXT_MIN_THRESHOLD);
 
 				
 				if(vADC_ExtPower >= VEXT_MIN_THRESHOLD){
-					aptStart_isHibernated = false;	
+					aptStart_isHibernated = false;
 					/* Perform the software reset. */
 					rstc_start_software_reset(RSTC);
 				}

@@ -161,7 +161,7 @@ static void init_specific_board(void)
 /**
  * \brief Initialize the chip for low power test.
  */
-static void init_chip(void)
+static void init_chip_ultra_low_power(void)
 {
 	/* Disable all the peripheral clocks */
 	pmc_disable_all_periph_clk();
@@ -262,12 +262,12 @@ static void sleep_core(char mode, uint16_t waitsec) {
 }
 
 
-int sleep_entry(char mode, uint16_t waitsec)
+int sleep_entry(char mode, uint16_t waitsec, bool init)
 {
 	g_ul_current_mck = sysclk_get_cpu_hz();
 	
 	/* Initialize the chip for the power consumption test */
-	init_chip();
+	if(init)init_chip_ultra_low_power();
 	/* Set default clock and re-configure UART */
 	set_default_working_clock();
 	reconfigure_console(g_ul_current_mck, CONF_UART_BAUDRATE);
