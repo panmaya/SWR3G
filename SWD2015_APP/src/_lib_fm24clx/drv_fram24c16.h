@@ -1,0 +1,40 @@
+/*
+ * drv_fram24c16.h
+ *
+ *  Created on: 21 ¾.¤. 2554
+ *      Author: Pan
+ */
+
+#ifndef DRV_FRAM24C16_H_
+#define DRV_FRAM24C16_H_
+
+#define _DRV_FRAM24C16_TRACE_LEV						24
+
+#define  ARC_RET_ERR_FRAM_PARAM							ADL_RET_ERR_PARAM				//-2
+#define  ARC_RET_ERR_FRAM_UNKNOWN_HDL					ADL_RET_ERR_UNKNOWN_HDL			//-3
+#define  ARC_RET_ERR_FRAM_ALREADY_SUBSCRIBED			ADL_RET_ERR_ALREADY_SUBSCRIBED	//-4
+#define  ARC_RET_ERR_FRAM_NOT_SUBSCRIBED				ADL_RET_ERR_NOT_SUBSCRIBED		//-5
+#define  ARC_RET_ERR_FRAM_BAD_STATE						ADL_RET_ERR_BAD_STATE			//-8
+
+#define  ARC_RET_ERR_FRAM_EMPTY_BUFFER					-101
+#define  ARC_RET_ERR_FRAM_FULL_BUFFER					-102
+
+#define  ARC_RET_ERR_FRAM_SUBSCRIBE_I2C_SUBSCRIBE		-121
+#define  ARC_RET_ERR_FRAM_SUBSCRIBE_FRAM_NOT_EXIST		-122
+#define  ARC_RET_ERR_FRAM_BREAK							-123
+#define  ARC_RET_ERR_FRAM_WRITE							-124
+#define  ARC_RET_ERR_FRAM_READ							-125
+#define  ARC_RET_ERR_FRAM_OUT_OF_RANGE					-126
+
+//#define _DRV_FRAM24C16_SIZE_PER_WRITE					0
+#define _DRV_FRAM24C16_SIZE_PER_WRITE					16
+
+#define _DRV_FRAM24C16_SIZE_PER_PAGE					256
+#define _DRV_FRAM24C16_CAPACITY_SIZE					(_DRV_FRAM24C16_SIZE_PER_PAGE*8)
+
+s32 drv_fram24c16_Read(u32 addr, u32 size, u8* data);
+s32 drv_fram24c16_Write(u32 addr, u32 size, u8* data);
+s32 drv_fram24c16_Subscribe(u16 size);
+
+
+#endif /* DRV_FRAM24C16_H_ */
