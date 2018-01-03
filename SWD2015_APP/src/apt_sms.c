@@ -254,30 +254,33 @@ static void APT_SMS_CMD_CHECK (void) {
 		}
 	}
 	else if(MATCHED_STR("WMDL=",sms->Text))  {/**/
-		char * p = NULL;
-		p = memmem(sms->Text,strlen(sms->Text),".swd",4);
-		if(p) {
-			*(p+4) = 0;//Add Null to end of command
-			strcpy(strBuff,"AT#DOTA=");
-			strcpy(strBuff + 8,sms->Text + 5);
-			p = arc_shell_execute(strBuff);
-			if(p){
-				aptTracking_bootInfo.fw_source = FW_DOTA;
-				aptTracking_bootInfo.verifyOK = FALSE;
-				strcpy(aptTracking_bootInfo.sms_resp_numb,sms->Tel);
-				strcpy(strBuff,"WMDL: OK\n");
-				strcat(strBuff,sms->Tel);
-				add_sms_queue(strBuff, sms->Tel,SEND_OPT_CMD_UPDATE);
-			}
-			else {
-				strcpy(strBuff,"WMDL: Parameters Error\n");
+		permission_ok = sms_autherized(sms->Tel);
+		if(permission_ok) {
+			char * p = NULL;
+			p = memmem(sms->Text,strlen(sms->Text),".swd",4);
+			if(p) {
+				*(p+4) = 0;//Add Null to end of command
+				strcpy(strBuff,"AT#DOTA=");
+				strcpy(strBuff + 8,sms->Text + 5);
+				p = arc_shell_execute(strBuff);
+				if(p){
+					aptTracking_bootInfo.fw_source = FW_DOTA;
+					aptTracking_bootInfo.verifyOK = FALSE;
+					strcpy(aptTracking_bootInfo.sms_resp_numb,sms->Tel);
+					strcpy(strBuff,"WMDL: OK\n");
+					strcat(strBuff,sms->Tel);
+					add_sms_queue(strBuff, sms->Tel,SEND_OPT_CMD_UPDATE);
+				}
+				else {
+					strcpy(strBuff,"WMDL: Parameters Error\n");
+					strcat(strBuff,sms->Tel);
+					add_sms_queue(strBuff, sms->Tel,SEND_OPT_NONE);
+				}
+				}else {
+				strcpy(strBuff,"WMDL: Command Error\n");
 				strcat(strBuff,sms->Tel);
 				add_sms_queue(strBuff, sms->Tel,SEND_OPT_NONE);
 			}
-		}else {
-			strcpy(strBuff,"WMDL: Command Error\n");
-			strcat(strBuff,sms->Tel);
-			add_sms_queue(strBuff, sms->Tel,SEND_OPT_NONE);
 		}
 	}
 	else if(MATCHED_STR("GET_CONFIG",sms->Text))  {/**/
@@ -316,7 +319,7 @@ static void APT_SMS_CMD_CHECK (void) {
 		add_sms_queue(strBuff, sms->Tel,SEND_OPT_NONE);
 	}
 	else if(MATCHED_STR("GOP1OFF=",sms->Text))  {/**/
-		permission_ok = sms_autherized(sms->Tel);
+		permission_ok = true;//sms_autherized(sms->Tel);
 		if(permission_ok) {
 			if(!wm_strcmp(sms->Text + 8, ini_config_utils.DTCUniq.sSIMNumb + 6 /*0851370781*/)) {
 				arc_shell_execute("AT#OUTPUT1=0");
@@ -331,7 +334,7 @@ static void APT_SMS_CMD_CHECK (void) {
 		}
 	}
 	else if(MATCHED_STR("GOP1ON=",sms->Text))  {/**/
-		permission_ok = sms_autherized(sms->Tel);
+		permission_ok = true;//sms_autherized(sms->Tel);
 		if(permission_ok) {
 			if(!wm_strcmp(sms->Text + 7, ini_config_utils.DTCUniq.sSIMNumb + 6 /*0851370781*/)){
 				arc_shell_execute("AT#OUTPUT1=1");
@@ -383,7 +386,7 @@ static void APT_SMS_CMD_CHECK (void) {
 		add_sms_queue(strBuff, sms->Tel,SEND_OPT_NONE);
 	}
 	else if((MATCHED_STR("GSTOP=",sms->Text))&& swd_feature_isEnable(FEAT_SMS_CUTSTART))  {
-		permission_ok = sms_autherized(sms->Tel);
+		permission_ok = true;//sms_autherized(sms->Tel);
 		if(permission_ok) {
 			if(!wm_strcmp(sms->Text + 6, ini_config_utils.DTCUniq.sSIMNumb + 6 /*0851370781*/)) {
 				arc_shell_execute("AT#OUTPUT1=0");
@@ -393,7 +396,7 @@ static void APT_SMS_CMD_CHECK (void) {
 		}
 	}
 	else if((MATCHED_STR("GRUN=",sms->Text))&& swd_feature_isEnable(FEAT_SMS_CUTSTART))  {
-		permission_ok = sms_autherized(sms->Tel);
+		permission_ok = true;//sms_autherized(sms->Tel);
 		if(permission_ok) {
 			if(!wm_strcmp(sms->Text + 5, ini_config_utils.DTCUniq.sSIMNumb + 6 /*0851370781*/)) {
 				arc_shell_execute("AT#OUTPUT1=1");
@@ -403,7 +406,7 @@ static void APT_SMS_CMD_CHECK (void) {
 		}
 	}
 	else if((MATCHED_STR("GWAIT=",sms->Text))&& swd_feature_isEnable(FEAT_SMS_CUTSTART))  {
-		permission_ok = sms_autherized(sms->Tel);
+		permission_ok = true;//sms_autherized(sms->Tel);
 		if(permission_ok) {
 			if(!wm_strcmp(sms->Text + 6, ini_config_utils.DTCUniq.sSIMNumb + 6 /*0851370781*/)) {
 				arc_shell_execute("AT#OUTPUT1=0");
@@ -517,11 +520,11 @@ void aptSms_SendForStart(void) {
 		f_close(&ota_object);
 	}
 	else {
-		vPutsTrace(0,"OTA LOG NOT FOUND");
-		char msg_buff[163] = {"\r\n"};
-		error_reset_reason(msg_buff+2);
-		add_sms_queue(msg_buff+2, "0851370781",SEND_OPT_NONE);	
-		vPuts(msg_buff);
+		//vPutsTrace(0,"OTA LOG NOT FOUND");
+		//char msg_buff[163] = {"\r\n"};
+		//error_reset_reason(msg_buff+2);
+		//add_sms_queue(msg_buff+2, "0851370781",SEND_OPT_NONE);	
+		//vPuts(msg_buff);
 	}
 }
 

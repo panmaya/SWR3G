@@ -197,6 +197,10 @@ static void APT_SWD_SET_SIM_Operator(aptSwd_preconfig_t * cfg) {
 		wm_strcpy(cfg->Sim.Operator,"L");
 		wm_strcpy(cfg->PPP.APN,"etlnet");
 	}
+	else if((cfg->Sim.ccid[2]=='4')&&(cfg->Sim.ccid[3]=='5')&&(cfg->Sim.ccid[4]=='7')&&(cfg->Sim.ccid[5]=='0')&&(cfg->Sim.ccid[6]=='3')) {
+		wm_strcpy(cfg->Sim.Operator,"U");
+		wm_strcpy(cfg->PPP.APN,"unitel3g");
+	}
 	else {
 		wm_strcpy(cfg->Sim.Operator,"N");
 		wm_strcpy(cfg->PPP.APN,"internet");

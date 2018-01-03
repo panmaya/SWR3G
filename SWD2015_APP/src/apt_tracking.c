@@ -899,7 +899,7 @@ void aptTracking_task(void * pvParameters) {
 	
 	APT_TRACKING_ReLoadMemData();
 	
-	//aptSms_SendForStart();
+	aptSms_SendForStart();
 	
 	if(swd_feature_isEnable(FEATURE_GEOFENCE_SOUND_4SCG)) {
 		

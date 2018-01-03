@@ -235,7 +235,7 @@ int transform_to_sharpE(char pData[512], aptTracking_runtime_t *pNVMem, ascii *e
 					(ini_config_utils.DTCUniq.optionmask >> 3)&0x01/*CAN enable*/,1/*Buzzer enable*/,0/*Portable*/,
 					SWD2015_FW_VERSION,ini_config_utils.DTCUniq.sFwName/*PSOC version*/,
 					//ibuild_year-2000 ,ibuild_month,ibuild_day,/*GSM Firmware Version*/
-					17 ,8,24,/*GSM Firmware Version*/
+					BUILD_YEAR - 2000 ,BUILD_MONTH, BUILD_DAY,/*GSM Firmware Version*/
 					aptSwd_get_sim_ccid()/*Serial SIM*/,apt_buffer_cpe_nbItem()/*Buffer*/,
 					(pNVMem->tmRTC.year >= 2000) ? pNVMem->tmRTC.year - 2000 : 0,pNVMem->tmRTC.month,pNVMem->tmRTC.day/*RTC-Date*/,pNVMem->tmRTC.hour,pNVMem->tmRTC.minute,pNVMem->tmRTC.second/*RTC-Time*/,
 					arc_netsys.signLev/*CSQ*/,pNVMem->Status.Event/*Status-Code*/,pNVMem->Status.R_Val/*Status-Value*/,

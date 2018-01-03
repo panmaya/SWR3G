@@ -177,6 +177,11 @@ static void misc_recfg_cmdHandler(adl_atCmdPreParser_t * Params) {
 	gpbr_write(GPBR_RESET_ID,1);//Reset When IG ON
 }
 
+
+static void misc_versionGet_cmdHandler(adl_atCmdPreParser_t * Params) {
+	printf("\r\n@VERSION: %03d\r\nOK\r\n",SWD2015_FW_VERSION);
+}
+
 static void misc_vPrint_cmdHandler (adl_atCmdPreParser_t * Params) {
 	uint8_t printlev = 0;
 	uint8_t onoff = 0;
@@ -236,6 +241,7 @@ static void misc_DLTCardInit_cmdHandler (adl_atCmdPreParser_t * Params) {
 
 
 void misc_cmd_Subscribe(void) {
+	adl_atCmdSubscribe("AT@VERSION", misc_versionGet_cmdHandler, ADL_CMD_TYPE_ACT|0x00);
 	adl_atCmdSubscribe("AT@WDRST", misc_wdReset_cmdHandler, ADL_CMD_TYPE_ACT|0x00);
 	adl_atCmdSubscribe("AT@PWRST", misc_pwrReset_cmdHandler, ADL_CMD_TYPE_ACT|0x00);
 	adl_atCmdSubscribe("AT@FDISK", misc_fdisk_cmdHandler, ADL_CMD_TYPE_READ|ADL_CMD_TYPE_ACT|0x00);

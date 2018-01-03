@@ -42,53 +42,151 @@ static uint8_t GPBM_Buffer_Index = 0;
 uint8_t cpe_del_trigger = false;
 uint8_t cpl_del_trigger = false;
 
+#define APT_GATEWAY_PLAY_SOUND_WAIT 15
+static bool APT_GATEWAY_bSoundplaying = false;
+
 static void APP_CHANNEL_SET_Handler(u8 ssid, s8 event, void *context){
 	ascii buffer[41] = {"TCP "};
 	switch(event) {
-		case ARC_HLNET_EV_READ:
-		if(context) {
-			arc_hltcp_ctx_t* ctx = context;
-			ctx->data[ctx->length] = 0;
-			strcat(buffer+4,"RCV");
+	case ARC_HLNET_EV_READ:
+	if(context) {
+		arc_hltcp_ctx_t* ctx = context;
+		ctx->data[ctx->length] = 0;
 			
-			if(ctx->length>=2) {
-				if(strstr((char*)ctx->data,"oK")){
-					aptLedSend_server(TRUE);
-					APT_GATEWAY_ServerNoRspTime = 0;//Clear
-					APT_GATEWAY_TCP_RawUploadCx.size = 0;//Clear
-					APT_GATEWAY_Upload_TimeDelay = 0;//Clear
-					APT_GATEWAY_TCP_RcvOKResp = true;
-					break;
-				}
-				else if(strstr((char*)ctx->data,"ER")){
-					APT_GATEWAY_ServerNoRspTime = 0;//Clear
-					APT_GATEWAY_TCP_RawUploadCx.size = 0;//Clear
-					APT_GATEWAY_Upload_TimeDelay = 0;//Clear
-					aptLedSend_server(FALSE);
-					break;
-				}
-				else if((ctx->length>=6)) strncpy(APT_GATEWAY_TCP_CMD_Buffer,(char*)ctx->data,160);
+		printf("\r\n%s\r\n",ctx->data);
+			
+		strcat(buffer+4,"RCV");
+			
+		if(ctx->length >=2 && ctx->length < 24) { // 24 is length off massage include CCID
+			if(strstr((char*)ctx->data,"oK")){
+				aptLedSend_server(TRUE);
+				APT_GATEWAY_ServerNoRspTime = 0;//Clear
+				APT_GATEWAY_TCP_RawUploadCx.size = 0;//Clear
+				APT_GATEWAY_Upload_TimeDelay = 0;//Clear
+				APT_GATEWAY_TCP_RcvOKResp = true;
+				break;
+			}
+			else if(strstr((char*)ctx->data,"ER")){
+				APT_GATEWAY_ServerNoRspTime = 0;//Clear
+				APT_GATEWAY_TCP_RawUploadCx.size = 0;//Clear
+				APT_GATEWAY_Upload_TimeDelay = 0;//Clear
+				aptLedSend_server(FALSE);
+				break;
 			}
 		}
-		break;
-		case ARC_HLNET_EV_CONNECTED:strcat(buffer+4,"CON OK");break;
-		case ARC_HLNET_EV_PEER_CLOSE:strcat(buffer+4,"PEER CLOSE");break;
-		case ARC_HLNET_EV_CONN_ERR:strcat(buffer+4,"CON ERR");break;
-		case ARC_HLNET_EV_NORMAL_ERR:strcat(buffer+4,"NORM ERR");break;
-		case ARC_HLNET_EV_ACCEPT_ERR:strcat(buffer+4,"ACCEPT ERR");break;
-		case ARC_HLNET_EV_TIMEOUT: strcat(buffer+4,"TIMEOUT");break;
-		case ARC_HLNET_EV_NETW_ERR: strcat(buffer+4,"NW ERR");break;
-		case ARC_HLNET_EV_MAX_SOCK: strcat(buffer+4,"MAX SOCK");break;
-		case ARC_HLNET_EV_MEM_ERR:strcat(buffer+4,"MEM ERR");break;
-		case ARC_HLNET_EV_DNS_ERR: strcat(buffer+4,"DNS ERR");break;
-		case ARC_HLNET_EV_SEND_WAIT: strcat(buffer+4,"SND WAIT");break;
-		case ARC_HLNET_EV_BAD_SSID:	strcat(buffer+4,"BAD SSID");break;
-		case ARC_HLNET_EV_SSID_RUNING: strcat(buffer+4,"SSID RUNING");break;
-		case ARC_HLNET_EV_SSID_FULLY: strcat(buffer+4,"SSID FULLY");break;
-		case ARC_HLNET_EV_RELEASE: buffer[0] = '\0';break;
-		case ARC_HLNET_EV_ALIVE: return; break;
+		else if(ctx->length > 24){ // massage include CCID
+			if(strstr((char*)ctx->data,"oKoK")){
+				aptLedSend_server(TRUE);
+				APT_GATEWAY_ServerNoRspTime = 0;//Clear
+				APT_GATEWAY_TCP_RawUploadCx.size = 0;//Clear
+				APT_GATEWAY_Upload_TimeDelay = 0;//Clear
+				APT_GATEWAY_TCP_RcvOKResp = true;
+				strncpy(APT_GATEWAY_TCP_CMD_Buffer,(char*)ctx->data+2,160);
+				break;
+			}else strncpy(APT_GATEWAY_TCP_CMD_Buffer,(char*)ctx->data,160);
+		}
 	}
-	if(buffer[0])vPutsTrace(APT_GATEWAY_TRACE,buffer);
+	break;
+	case ARC_HLNET_EV_CONNECTED:strcat(buffer+4,"CON OK");break;
+	case ARC_HLNET_EV_PEER_CLOSE:strcat(buffer+4,"PEER CLOSE");break;
+	case ARC_HLNET_EV_CONN_ERR:strcat(buffer+4,"CON ERR");break;
+	case ARC_HLNET_EV_NORMAL_ERR:strcat(buffer+4,"NORM ERR");break;
+	case ARC_HLNET_EV_ACCEPT_ERR:strcat(buffer+4,"ACCEPT ERR");break;
+	case ARC_HLNET_EV_TIMEOUT: strcat(buffer+4,"TIMEOUT");break;
+	case ARC_HLNET_EV_NETW_ERR: strcat(buffer+4,"NW ERR");break;
+	case ARC_HLNET_EV_MAX_SOCK: strcat(buffer+4,"MAX SOCK");break;
+	case ARC_HLNET_EV_MEM_ERR:strcat(buffer+4,"MEM ERR");break;
+	case ARC_HLNET_EV_DNS_ERR: strcat(buffer+4,"DNS ERR");break;
+	case ARC_HLNET_EV_SEND_WAIT: strcat(buffer+4,"SND WAIT");break;
+	case ARC_HLNET_EV_BAD_SSID:	strcat(buffer+4,"BAD SSID");break;
+	case ARC_HLNET_EV_SSID_RUNING: strcat(buffer+4,"SSID RUNING");break;
+	case ARC_HLNET_EV_SSID_FULLY: strcat(buffer+4,"SSID FULLY");break;
+	case ARC_HLNET_EV_RELEASE: buffer[0] = '\0';break;
+	case ARC_HLNET_EV_ALIVE: return; break;
+	}
+	if(buffer[0])vPutsTrace(30,buffer);
+}
+
+
+static void APT_GATEWAY_SOUND_PLAY(const char *cmd) {
+	if(APT_GATEWAY_bSoundplaying==false) {
+		APT_GATEWAY_bSoundplaying = true;
+		adl_atCmdCreate((char*)cmd,ADL_AT_PORT_TYPE(ADL_PORT_UART1,TRUE),NULL);
+	}
+}
+
+static void APT_GATEWAY_TCP_CMD(void) {
+	if(APT_GATEWAY_TCP_CMD_Buffer[0]) {
+		ascii strBuff[161] = {""};
+		char *pBuff = &APT_GATEWAY_TCP_CMD_Buffer[0];
+		char *pstr_ccid = aptSwd_get_sim_ccid();
+		uint8_t ccid_len = strlen(pstr_ccid);
+		
+		// oK,CCID,...........
+		if(!strncmp(pBuff,"oK,",3)) {
+			
+			//puts("\r\noK,\r\n");
+			
+			if(!strncmp(pBuff+3,pstr_ccid,ccid_len)){
+				
+				//puts(pstr_ccid);
+				
+				// oK,CCID,AT#FOO
+				if(!strncmp(pBuff+3+ccid_len,",AT#",4)) {
+					const ascii *ptxt = pBuff;
+					for(;*ptxt;ptxt++) {
+						if(*ptxt =='=' || *ptxt =='?') break;
+					}
+					wm_strncpy(strBuff, pBuff+6+ccid_len, (ptxt - pBuff)-(6+ccid_len));//Remove 'oK,CCID,AT'
+					strBuff[(ptxt - pBuff)-(6+ccid_len)] = 0;
+					wm_strcat(strBuff,": ");//Append ':
+					char * p = arc_shell_execute(pBuff+4+ccid_len);
+					if(p)strcat(strBuff,p);
+					else strcat(strBuff,"Command Error");
+					arc_hltcp_Send(CPE_SERVER_CTX_ID, (u16)strlen(strBuff), (u8*)strBuff);
+				}
+				else {
+					// oK,CCID,TYPE,ALARM VALUE
+					char cmd[64];
+					bool play = true;
+					switch(pBuff[4+ccid_len]) { // ALERT TYPE
+					case '1'://Over Speed
+						if(pBuff[5+ccid_len] == ',') {
+							uint16_t value = atoi(pBuff+6+ccid_len);
+							
+							printf("\r\n TCP Cmd Over Speed Alert %d Kmph\r\n",value);
+							
+							if(value >= 90) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP90.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",90);
+							else if(value < 90 && value >= 80) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP80.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",80);
+							else if(value < 80 && value >= 75) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP75.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",75);
+							else if(value < 75 && value >= 60) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP60.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",60);
+							else if(value < 60 && value >= 45) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP45.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",45);
+							else if(value < 45 && value >= 30) strcpy(cmd,"AT#AUDIOPLAY=\"WOSP30.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%d.wav\"",30);
+							else strcpy(cmd,"AT#AUDIOPLAY=\"WOSP00.wav\"");//snprintf(cmd,63,"AT#AUDIOPLAY=\"WOSP%0d.wav\"",0);
+							
+						}else puts("\r\n TCP Over Speed Err Params\r\n");
+						break;
+					case '2'://Parked out of permitted area
+						puts("\r\n TCP Cmd Park Area Alert\r\n");
+						strcpy(cmd,"AT#AUDIOPLAY=\"WPOA.wav\"");
+						break;
+					case '3'://Drive out of permitted area
+						puts("\r\n TCP Cmd Drive Area Alert\r\n");
+						strcpy(cmd,"AT#AUDIOPLAY=\"WDOA.wav\"");
+						break;
+					default:
+						puts("\r\n TCP Cmd Unknown\r\n");
+						play = false;
+						break;
+					}
+					
+					if(play && !APT_GATEWAY_bSoundplaying)APT_GATEWAY_SOUND_PLAY(cmd);
+				}
+			}
+			
+			memset(APT_GATEWAY_TCP_CMD_Buffer,0,sizeof(APT_GATEWAY_TCP_CMD_Buffer));
+		}
+	}
 }
 
 static void APT_GATEWAY_1Sec_Workspace ( void ) {// 1 Second Timer
@@ -96,6 +194,8 @@ static void APT_GATEWAY_1Sec_Workspace ( void ) {// 1 Second Timer
 	static uint8_t print_show_delay = 0;
 	static uint32_t cpe_time = 0;
 	static uint32_t cpl_time = 0;
+	
+	static uint16_t			delay_soundPlayer = 0;
 	
 	if(print_show_delay > _1SecTick_Second(5)) {
 		print_show_delay = 0;
@@ -106,6 +206,14 @@ static void APT_GATEWAY_1Sec_Workspace ( void ) {// 1 Second Timer
 	}else print_show_delay++;
 	
 	UP_COUNTER_OVERFLOW_LIMIT(APT_GATEWAY_ServerNoRspTime,TRUE,65535);
+	
+	APT_GATEWAY_TCP_CMD();
+	
+	if(APT_GATEWAY_bSoundplaying) delay_soundPlayer++;
+	if(delay_soundPlayer > APT_GATEWAY_PLAY_SOUND_WAIT) {
+		APT_GATEWAY_bSoundplaying = false;
+		delay_soundPlayer = 0;
+	}
 
 	if(APT_GATEWAY_TCP_RawUploadCx.size!=0) {
 		UP_COUNTER_OVERFLOW_ZERO(APT_GATEWAY_Upload_TimeDelay,TRUE,60*60*12);
@@ -209,27 +317,6 @@ static void APT_GATEWAY_1Sec_Workspace ( void ) {// 1 Second Timer
 		else {
 			vPrintfTrace((30,"CPL: Unknown Data - Delete %ld Byte",apt_buffer_cpl_csize()));
 			apt_buffer_cpl_del();
-		}
-	}
-	else {
-		if(APT_GATEWAY_TCP_CMD_Buffer[0]) {
-			ascii strBuff[161] = {""};
-			char *pBuff = &APT_GATEWAY_TCP_CMD_Buffer[0];
-			
-			if(!strncmp(pBuff,"AT#",3)) {
-				const ascii *ptxt = pBuff;
-				for(;*ptxt;ptxt++) {
-					if(*ptxt =='=' || *ptxt =='?') break;
-				}
-				wm_strncpy(strBuff,pBuff+2, (ptxt - pBuff)-2);//Remove 'AT'
-				strBuff[(ptxt - pBuff)-2] = 0;
-				wm_strcat(strBuff,": ");//Append ':
-				char * p = arc_shell_execute(pBuff);
-				if(p)strcat(strBuff,p);
-				else strcat(strBuff,"Command Error");
-				arc_hltcp_Send(CPE_SERVER_CTX_ID, (u16)strlen(strBuff), (u8*)strBuff);
-			}
-			memset(APT_GATEWAY_TCP_CMD_Buffer,0,sizeof(APT_GATEWAY_TCP_CMD_Buffer));
 		}
 	}
 }

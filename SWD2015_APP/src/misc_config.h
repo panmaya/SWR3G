@@ -25,7 +25,26 @@
 #define TOSTRING(x)						STRINGIFY(x)
 #define AT								__FILE__ ":" TOSTRING(__LINE__)
 
-#define SWD2015_FW_VERSION				302
+
+//#define SWD2015_FW_VERSION				301 // Original ;Dec 28 2016
+//#define BUILD_YEAR						2016
+//#define BUILD_MONTH						12
+//#define BUILD_DAY						28
+
+//#define SWD2015_FW_VERSION				302 // Add Auto Answer and external speaker + microphone ;Aug 24 2017
+//#define BUILD_YEAR						2017
+//#define BUILD_MONTH						8
+//#define BUILD_DAY						24
+
+//#define SWD2015_FW_VERSION				303 // SMS cut start with 4 digit password + Fixed SMS response for DOTA ;Oct 3 2017
+//#define BUILD_YEAR						2017
+//#define BUILD_MONTH						10
+//#define BUILD_DAY						3
+
+#define SWD2015_FW_VERSION				304 // TCP Receive command & unitel3g support added
+#define BUILD_YEAR						2017
+#define BUILD_MONTH						11
+#define BUILD_DAY						13
 
 #define _1SecTick_Second(_x)			(_x)// For 1 Second Loop
 #define _100mSecTick_Second(_x)			(_x*10) //For 100 MilliSecond Loop
